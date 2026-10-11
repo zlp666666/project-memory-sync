@@ -38,7 +38,7 @@ rollback 采用补偿事件，需 expected_revision，限最新 apply。保留�
 1. 所有客户端完成当前事务，记录 status 的 store_id/revision 和自己的 Skill tag。
 2. 下载可信仓库的新固定 tag 到一个新的代码目录，查看 CHANGELOG 和schema兼容说明，不执行远程安装脚本。
 3. 在隔离样例运行 `python -m unittest discover -s tests -v`。用既有数据脱敏副本做读写、并发和恢复测试。
-4. 数据快照不提交 Git。只有版本要求 schema 迁移时，先 plan 再 apply；1.0.0内不自动迁移已是schema3的库。
+4. 数据快照不提交 Git。只有版本要求 schema 迁移时，先 plan 再 apply；1.0.x内不自动迁移已是schema3的库。
 5. 单个客户端切换代码版本，完成跨客户端交接验收，再逐个切换。回退代码使用上一个 tag，数据回滚与代码回滚分开。
 
 依赖标准 Python，无需升级全局配置。代码版本回退不代表数据已回退。迁移或导入遇到冲突即停止并报告，不自动重试不同参数。

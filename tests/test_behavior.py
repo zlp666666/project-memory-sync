@@ -530,6 +530,57 @@ print('completed')
         self.assertEqual(self.path.read_bytes(), before)
         self.assertFalse(list(self.path.parent.glob(".sync-*.tmp")))
 
+    @unittest.skipUnless(os.name == "nt", "Windows retry behavior has not been exercised on a Linux host")
+    def test_windows_transient_permission_error_recovers_without_repeating_transaction(self):
+        real_replace = core.os.replace
+        for succeeds_on in (2, 3):
+            with self.subTest(succeeds_on=succeeds_on):
+                before = self.path.read_bytes()
+                before_data = self.store.read()
+                attempts = []
+                def temporary_denial(src, dst):
+                    if Path(dst) == self.path:
+                        attempts.append((src, dst))
+                        if len(attempts) < succeeds_on:
+                            raise PermissionError(13, "Synthetic transient Windows file sharing denial")
+                    return real_replace(src, dst)
+                with mock.patch.object(core.os, "replace", side_effect=temporary_denial), mock.patch.object(core.time, "sleep") as sleep:
+                    receipt = self.create("Synthetic Windows retry " + str(succeeds_on), request_id="windows-retry-" + str(succeeds_on))
+                after = self.store.read()
+                self.assertEqual(len(attempts), succeeds_on)
+                self.assertEqual(len({src for src, dst in attempts}), 1)
+                self.assertEqual(sleep.call_args_list, [mock.call(0.05 * (attempt + 1)) for attempt in range(succeeds_on - 1)])
+                self.assertEqual(after["revision"], before_data["revision"] + 1)
+                self.assertEqual(len(after["events"]), len(before_data["events"]) + 1)
+                self.assertEqual(len(after["operations"]), len(before_data["operations"]) + 1)
+                self.assertEqual((self.store.backups / (receipt["backup_sha256"] + ".json")).read_bytes(), before)
+                self.assertFalse(list(self.path.parent.glob(".sync-*.tmp")))
+
+    @unittest.skipUnless(os.name == "nt", "Windows retry behavior has not been exercised on a Linux host")
+    def test_windows_persistent_permission_error_stops_after_four_attempts_and_preserves_archive(self):
+        before = self.path.read_bytes()
+        before_data = self.store.read()
+        real_replace = core.os.replace
+        attempts = []
+        def persistent_denial(src, dst):
+            if Path(dst) == self.path:
+                attempts.append((src, dst))
+                raise PermissionError(13, "Synthetic persistent Windows file sharing denial")
+            return real_replace(src, dst)
+        with mock.patch.object(core.os, "replace", side_effect=persistent_denial), mock.patch.object(core.time, "sleep") as sleep:
+            with self.assertRaisesRegex(PermissionError, "Synthetic persistent Windows"):
+                self.create("Synthetic blocked Windows write", request_id="windows-persistent-denial")
+        self.assertEqual(len(attempts), 4)
+        self.assertEqual(len({src for src, dst in attempts}), 1)
+        self.assertEqual(sleep.call_args_list, [mock.call(0.05), mock.call(0.1), mock.call(0.05 * 3)])
+        self.assertEqual(self.path.read_bytes(), before)
+        self.assertEqual(self.store.read(), before_data)
+        self.assertNotIn("windows-persistent-denial", self.store.read()["operations"])
+        self.assertFalse(list(self.path.parent.glob(".sync-*.tmp")))
+        self.assertFalse(list(self.store.backups.glob(".sync-*.tmp")))
+        backup = self.store.backups / (hashlib.sha256(before).hexdigest() + ".json")
+        self.assertEqual(backup.read_bytes(), before)
+
     def test_corrupt_backup_prevents_live_mutation(self):
         before = self.path.read_bytes()
         key = hashlib.sha256(before).hexdigest()

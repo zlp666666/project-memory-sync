@@ -1,5 +1,6 @@
 """CLI acceptance, stable-ID view and failure recovery on synthetic local archives."""
 import json
+import copy
 import os
 import re
 import subprocess
@@ -62,6 +63,25 @@ class CLITests(unittest.TestCase):
         self.assertEqual(code, 2)
         self.assertFalse(result["ok"])
         self.assertEqual(dest.read_text(), "keep existing")
+
+    def test_importing_an_existing_subset_is_also_idempotent(self):
+        first = self.create()
+        # A distinct idea is explicitly confirmed; both share a name in this synthetic case.
+        request = {"request_id": "other", "action": "create", "confirmed_distinct": True,
+                   "confirmation_quote": "Different object",
+                   "authorization": {"basis": "explicit_user", "reference": "synthetic:u", "quote": "Save another object"},
+                   "source": {"ref": "synthetic:u", "quote": "Different object", "evidence_status": "verified"},
+                   "record": {"name": "Garden reminder"}}
+        self.store.apply(request)
+        before = self.store.read()
+        incoming = empty_store()
+        incoming["store_id"] = before["store_id"]
+        incoming["records"] = {first["record_id"]: copy.deepcopy(before["records"][first["record_id"]])}
+        incoming["events"] = [copy.deepcopy(e) for e in before["events"] if e["record_id"] == first["record_id"]]
+        auth = {"basis": "explicit_user", "reference": "synthetic:u", "quote": "Import this existing subset"}
+        result = self.store.import_document(incoming, before["revision"], auth)
+        self.assertTrue(result["duplicate"])
+        self.assertEqual(self.store.read(), before)
 
     def test_atomic_new_output_cannot_overwrite_even_under_race(self):
         dest = self.archive / "asset.json"

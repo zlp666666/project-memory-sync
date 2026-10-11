@@ -15,7 +15,7 @@ from contextlib import contextmanager
 from datetime import datetime, timezone
 from pathlib import Path
 
-VERSION = "1.0.0"
+VERSION = "1.0.1"
 ORIGINS = {"user_proposed", "user_approved", "ai_suggested", "knowledge_qa", "uncertain"}
 DEPTHS = {"idea", "inquiry", "research", "prototype", "unknown"}
 PROGRESS = {"unknown", "discussed", "researched", "developed", "failed", "paused", "completed", "abandoned"}
@@ -215,7 +215,16 @@ def atomic_write(path, raw, overwrite=True):
             stream.flush()
             os.fsync(stream.fileno())
         if overwrite:
-            os.replace(temporary, path)
+            # Windows indexers may hold a freshly read file briefly. The caller's
+            # lock stays held; bounded retry never discards the pre-image.
+            for attempt in range(4):
+                try:
+                    os.replace(temporary, path)
+                    break
+                except PermissionError:
+                    if os.name != "nt" or attempt == 3:
+                        raise
+                    time.sleep(0.05 * (attempt + 1))
         else:
             # Atomic publication that fails if another writer already created the target.
             os.link(temporary, path)
@@ -441,7 +450,8 @@ class Store:
                     raise SyncError("IMPORT_CONFLICT: divergent event")
             new_count = sum(key not in data["records"] for key in incoming["records"])
             new_events = [ev for ev in incoming["events"] if ev["id"] not in existing]
-            if not new_count and not new_events and all(incoming[f] == data[f] for f in ("records", "operations", "redirects")):
+            new_metadata = any(key not in data[field] for field in ("operations", "redirects") for key in incoming[field])
+            if not new_count and not new_events and not new_metadata:
                 return {"ok": True, "duplicate": True, "revision": data["revision"], "saved_path": str(self.path)}
             for field in ("records", "operations", "redirects"):
                 data[field].update(copy.deepcopy(incoming[field]))

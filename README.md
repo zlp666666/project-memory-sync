@@ -1,6 +1,6 @@
 # project-memory-sync
 
-版本 **1.0.0**。面向多 AI、单台本地电脑的项目与灵感档案统一接口，遵循 [Agent Skills](https://agentskills.io/specification) 结构。唯一数据源是用户现有档案 `logs/s7-library.json`；代码和私人数据分离，不创建另一个记忆数据库。
+版本 **1.0.1**。面向多 AI、单台本地电脑的项目与灵感档案统一接口，遵循 [Agent Skills](https://agentskills.io/specification) 结构。唯一数据源是用户现有档案 `logs/s7-library.json`；代码和私人数据分离，不创建另一个记忆数据库。
 
 支持明确指令的一句话灵感、已有项目进展、追加探索经历、名称/别名候选、当前 AI 参与语义判断、可溯源历史、人工确认合并、稳定 ID、幂等请求、备份、最新操作补偿回滚、增量导入导出及本地并发写入。
 
