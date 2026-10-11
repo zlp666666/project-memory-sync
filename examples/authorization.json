@@ -1,0 +1,7 @@
+{
+  "basis": "approved_scope",
+  "reference": "synthetic:development-authorization",
+  "quote": "允许在隔离样例内迁移并导入档案。",
+  "actions": ["migrate", "import"],
+  "record_ids": ["*"]
+}

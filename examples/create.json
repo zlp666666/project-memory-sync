@@ -1,0 +1,9 @@
+{
+  "request_id": "synthetic-session-001-save-idea",
+  "action": "create",
+  "actor": "example-client",
+  "authorization": {"basis": "explicit_user", "reference": "synthetic:session-001:user-1", "quote": "帮我记下：想做一个阳台植物提醒器。"},
+  "source": {"ref": "synthetic:session-001:user-1", "quote": "想做一个阳台植物提醒器。", "evidence_status": "verified"},
+  "text": "一句话灵感，尚无成果。",
+  "record": {"kind": "idea", "name": "阳台植物提醒器", "origin": "user_proposed", "depth": "idea", "progress": "unknown", "intent": "undecided"}
+}

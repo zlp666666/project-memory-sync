@@ -1,0 +1,13 @@
+{
+  "request_id": "synthetic-session-002-research",
+  "action": "append",
+  "record_id": "00000000-0000-4000-8000-000000000001",
+  "actor": "example-client",
+  "occurred_at": "2026-01-02T12:00:00+08:00",
+  "authorization": {"basis": "explicit_user", "reference": "synthetic:session-002:user-2", "quote": "把这次调研也记到原来的想法里。"},
+  "source": {"ref": "synthetic:session-002:user-2", "quote": "查了传感器，暂时先搁置，成本太高。", "evidence_status": "verified"},
+  "text": "调研了湿度传感器，因成本暂时搁置。",
+  "event_type": "research",
+  "changes": {"depth": "research", "progress": "paused"},
+  "details": {"decisions": [], "outcomes": ["完成器件比较"], "problems": ["成本高"], "next_steps": []}
+}
