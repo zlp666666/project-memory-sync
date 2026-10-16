@@ -1,0 +1,7 @@
+{
+  "connection_schema": 1,
+  "workspace": "/synthetic-workspace",
+  "archive": "/synthetic-workspace/existing-archive",
+  "store_id": "00000000-0000-4000-8000-000000000001",
+  "access": "read_only"
+}
