@@ -2,6 +2,10 @@
 
 最后核对：2026-10-12。本文提供安装方法，本次开发没有在 WorkBuddy、Codex、Hermes 或 ChatGPT 中安装本 Skill，也没有修改全局配置。官方文档、只读本机检查和客户端完整验收是三个不同层次。
 
+2026-10-16 Unreleased增量：通用本地安装、连接与自检见[setup/doctor](setup.md)。该工具使用明确的skills-root，不猜客户端发现目录，不安装软件本体。以下原有本机版本检查属2026-10-12历史记录；本分支测试只用合成目录，没有真实客户端安装/新会话发现结果。
+
+当前官方能力边界：Codex [Build skills](https://learn.chatgpt.com/docs/build-skills)列出项目/用户 `.agents/skills`；部分bundled installer默认仍为 `$CODEX_HOME/skills`，故应明确安装目标并实测发现。[插件onboardingSkill](https://developers.openai.com/plugins/build/plugins)是用户触发的安装后设置入口，本仓库没有因此成为插件。WorkBuddy [技能说明](https://www.codebuddy.cn/docs/workbuddy/From-Beginner-to-Expert-Guide/Function-Description/Skills-Market)支持UI上传本地技能包，对话安装限技能市场，不宣称任意GitHub URL对话安装。[项目说明](https://www.codebuddy.cn/docs/workbuddy/From-Beginner-to-Expert-Guide/Function-Description/Project)另有代码项目 `.codebuddy/skills` / rules / AGENTS支持；不等于本机已发现本包。Hermes本轮未复核，下面profile说明应在使用前按实际版本确认。
+
 ## 共同约定
 
 - Skill 安装目录只保存通用代码、说明和模拟示例。私人档案仍在原有档案目录中，各客户端指向同一个目录；不得复制为各自的长期记忆库。
@@ -17,10 +21,9 @@ $skillDir = '<REVIEWED_SKILL_CHECKOUT>'
 $archiveDir = '<APPROVED_EXISTING_ARCHIVE_DIRECTORY>'
 python --version
 python (Join-Path $skillDir 'scripts\memory_sync.py') --archive $archiveDir status
-python (Join-Path $skillDir 'scripts\memory_sync.py') --archive $archiveDir migrate
 ```
 
-`--archive` 指向包含 `logs/s7-library.json` 的现有档案目录。`migrate` 不带 `--apply` 时只返回迁移计划；不要因为安装 Skill 而自动执行迁移。也可使用本机未提交的 `local-config.json` 和 `--config`，或仅对当前进程设置 `PROJECT_MEMORY_ARCHIVE`。不把实际路径配置提交 Git，不修改全局环境变量。
+`--archive` 指向包含 `logs/s7-library.json` 的现有档案目录。本分支已有完整连接时优先用 `bootstrap.py doctor` 返回短身份检查；缺连接时按[setup说明](setup.md)集中提供workspace/archive。安装检查不运行迁移。`migrate` 即使不带 `--apply` 也会创建合作锁文件，不是无副作用的只读检查；只在明确迁移任务中按[迁移说明](migration.md)使用。也可使用本机未提交的 `local-config.json` 和 `--config`，或仅对当前进程设置 `PROJECT_MEMORY_ARCHIVE`。不把实际路径配置提交 Git，不修改全局环境变量。
 
 日常调用示例：
 

@@ -24,7 +24,15 @@ def emit(value):
 
 
 def store_for(args):
-    config = load(args.config) if args.config else {}
+    # Explicit paths retain the original CLI behavior. A saved connection is used
+    # only when the caller did not choose another archive/environment/config.
+    config_path = args.config
+    default_config = Path(__file__).resolve().parents[1] / "local-config.json"
+    if not config_path and not args.archive and not os.environ.get("PROJECT_MEMORY_ARCHIVE") and default_config.is_file():
+        config_path = str(default_config)
+    config = load(config_path) if config_path else {}
+    if not isinstance(config, dict):
+        raise SyncError("CONFIG_OBJECT_REQUIRED")
     archive = args.archive or os.environ.get("PROJECT_MEMORY_ARCHIVE") or config.get("archive")
     if not archive:
         raise SyncError("ARCHIVE_REQUIRED: --archive, --config or PROJECT_MEMORY_ARCHIVE")
@@ -34,6 +42,16 @@ def store_for(args):
     repo = Path(__file__).resolve().parents[1]
     if root == repo or repo in root.parents:
         raise SyncError("PRIVATE_DATA_IN_CODE_REPOSITORY_FORBIDDEN")
+    if "connection_schema" in config:
+        if __package__:
+            from .bootstrap import validate_connection
+        else:
+            from bootstrap import validate_connection
+        validate_connection(config, archive)
+        # Even migrate's preview creates a cooperative lock in the legacy CLI.
+        writes_archive = args.command in ("apply", "import", "migrate")
+        if writes_archive and config["access"] != "read_write":
+            raise SyncError("CONNECTION_READ_ONLY")
     return root, Store(root / "logs" / "s7-library.json")
 
 
